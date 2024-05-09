@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Person = require('./../models/Person');
+const { jwtAuthMiddleware, generateToken } = require('./../jwt')
 
 //method to create a person
-router.post('/', async(req, res) => {
+router.post('/signup', async(req, res) => {
 
     try {
         const dataMenu = req.body //Assuming the request body contains the person data
@@ -14,7 +15,14 @@ router.post('/', async(req, res) => {
         //Save the new person to the database
         const savedPerson = await newPerson.save();
         console.log('data saved');
-        res.status(200).json(savedPerson);
+        const payload = {
+            id: savedPerson.id,
+            username: savedPerson.username
+        }
+        console.log(JSON.stringify(payload));
+        const token = generateToken(savedPerson.username);
+        console.log("Token is: ", token);
+        res.status(200).json({ savedPerson: savedPerson, token: token });
 
     } catch (err) {
         console.log(err);
@@ -22,6 +30,36 @@ router.post('/', async(req, res) => {
     }
 })
 
+//login route
+
+router.post('/login', async(req, res) => {
+    try {
+
+        //extract username and password
+        const { username, password } = req.body;
+        const user = await Person.findOne({ username: username });
+
+        //If user does not exist or password does not match, return error
+
+        if (!user || !(await user.comparePassword(password))) {
+            return res.status(401).json({ error: 'Invalid username or password' })
+        }
+
+        //generate tokens
+
+        const payload = {
+            id: user.id,
+            username: user.username
+        }
+        const token = generateToken(payload);
+
+        //return token as response
+        res.json({ token })
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+})
 router.get('/', async(req, res) => {
     try {
         const data = await Person.find();

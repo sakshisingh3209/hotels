@@ -39,7 +39,7 @@ const personRoutes = require('./routes/personRoutes');
 const menuRoutes = require('./routes/menuRoutes');
 
 //Use the router files
-app.use('/person', localAuthMiddelware, personRoutes);
+app.use('/person', personRoutes);
 app.use('/menu', menuRoutes);
 
 
